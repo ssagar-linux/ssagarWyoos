@@ -5,8 +5,35 @@
 void printf(char* str);
 
 
-InterruptManager::GateDescriptor InterruptManager::interruptDescriptorTable[256];
 
+
+
+InterruptHandler::InterruptHandler(InterruptManager* pInterruptManager, uint8_t interruptNumber)
+{
+	this->pInterruptManager = pInterruptManager;
+	this->interruptNumber   = interruptNumber;
+	pInterruptManager->ppHandlers[interruptNumber] = this; // resgister customize ISR
+}
+
+InterruptHandler::~InterruptHandler()
+{
+	if(pInterruptManager->ppHandlers[interruptNumber] = this)
+		pInterruptManager->ppHandlers[interruptNumber] = 0;
+
+}
+
+uint32_t InterruptHandler::HandleInterrupt(uint32_t esp)
+{
+	return esp;
+}
+
+
+
+
+
+
+InterruptManager::GateDescriptor InterruptManager::interruptDescriptorTable[256];
+InterruptManager* InterruptManager::pActiveInterruptManager = 0;
 
 void InterruptManager::SetInterruptDescriptorTableEntry(uint8_t interrupt,
     uint16_t CodeSegment, void (*handler)(), uint8_t DescriptorPrivilegeLevel, uint8_t DescriptorType)
@@ -36,10 +63,10 @@ InterruptManager::InterruptManager(uint16_t hardwareInterruptOffset, GlobalDescr
     for(uint8_t i = 255; i > 0; --i)
     {
         SetInterruptDescriptorTableEntry(i, CodeSegment, &InterruptIgnore, 0, IDT_INTERRUPT_GATE);
-        //handlers[i] = 0;
+        ppHandlers[i] = 0;
     }
     SetInterruptDescriptorTableEntry(0, CodeSegment, &InterruptIgnore, 0, IDT_INTERRUPT_GATE);
-    //handlers[0] = 0;
+    ppHandlers[0] = 0;
 
     SetInterruptDescriptorTableEntry(0x00, CodeSegment, &HandleException0x00, 0, IDT_INTERRUPT_GATE);
     SetInterruptDescriptorTableEntry(0x01, CodeSegment, &HandleException0x01, 0, IDT_INTERRUPT_GATE);
@@ -113,32 +140,56 @@ uint16_t InterruptManager::HardwareInterruptOffset()
 
 void InterruptManager::Activate()
 {
-    //if(ActiveInterruptManager == 0)
-    {
-        //ActiveInterruptManager = this;
-        asm("sti");
-    }
+	if(pActiveInterruptManager != 0)
+		pActiveInterruptManager->Deactivate();
+
+	pActiveInterruptManager = this;
+	asm("sti");
 }
 
 void InterruptManager::Deactivate()
 {
-    /*if(ActiveInterruptManager == this)
-    {
-        ActiveInterruptManager = 0;
-        */
-        //asm("cli");
-        /*
-    }*/
+	if(pActiveInterruptManager == this)
+	{
+		pActiveInterruptManager = 0;
+		asm("cli");
+	}
 }
 
 uint32_t InterruptManager::HandleInterrupt(uint8_t interrupt, uint32_t esp)
 {
-    char* foo = "INTERRUPT 0x00";
-    char* hex = "0123456789ABCDEF";
+	if(pActiveInterruptManager != 0)
+		pActiveInterruptManager->DoHandleInterrupt(interrupt, esp);
+	return esp;
+}
 
-    foo[12] = hex[(interrupt >> 4) & 0xF];
-    foo[13] = hex[interrupt & 0xF];
-    printf(foo);
+uint32_t InterruptManager::DoHandleInterrupt(uint8_t interrupt, uint32_t esp)
+{
+	if(ppHandlers[interrupt] != 0)
+	{
+		// Customize ISR Handler
+	       esp = ppHandlers[interrupt]->HandleInterrupt(esp);
+	}
 
-    return esp;
+	else if(interrupt != hardwareInterruptOffset)
+	{
+		//default ISR Handler, Ignoring timer interrupt printf
+		char* foo = "UNHANDLED INTERRUPT 0x00";
+		char* hex = "0123456789ABCDEF";
+
+		foo[22] = hex[(interrupt >> 4) & 0xF];
+		foo[23] = hex[interrupt & 0xF];
+		printf(foo);
+	}
+
+	// Update pic Master & (Slave) we(cpu) is done with this Interrupt.
+	// Please send new Interrupt i.e. Hardware Interrupt must be achnowledged
+	if(hardwareInterruptOffset <= interrupt && interrupt < hardwareInterruptOffset + 16)
+	{
+		programmableInterruptControllerMasterCommandPort.Write(0x20);
+		if(hardwareInterruptOffset + 8 <= interrupt)
+			programmableInterruptControllerSlaveCommandPort.Write(0x20);
+	}
+
+	return esp;
 }
