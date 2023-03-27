@@ -7,11 +7,17 @@
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 #include <drivers/vga.h>
+#include <gui/desktop.h>
+#include <gui/window.h>
+
+
+#define GRAPHICSMODE
 
 using namespace::myos;
 using namespace::myos::common;
 using namespace::myos::drivers;
 using namespace::myos::hardwarecommunication;
+using namespace::myos::gui;
 
 void printf(char* str)
 {
@@ -144,14 +150,27 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
    InterruptManager interrupts(0x20, &gdt);
    printf("Initializing Hardware, Stage 1\n");
 
+   #ifdef GRAPHICSMODE
+      Desktop desktop(320,200, 0x00,0x00,0xA8);
+   #endif
+
    DriverManager drvManager;
 
-      PrintfKeyboardEventHandler kbhandler;
-      KeyboardDriver keyboard(&interrupts, &kbhandler);
+      #ifdef GRAPHICSMODE
+         KeyboardDriver keyboard(&interrupts, &desktop);
+      #else
+         PrintfKeyboardEventHandler kbhandler;
+         KeyboardDriver keyboard(&interrupts, &kbhandler);
+      #endif
       drvManager.AddDriver(&keyboard);
 
-      MouseToConsole mouseHandler;
-      MouseDriver mouse(&interrupts, &mouseHandler);
+
+      #ifdef GRAPHICSMODE
+         MouseDriver mouse(&interrupts, &desktop);
+      #else
+         MouseToConsole mouseHandler;
+         MouseDriver mouse(&interrupts, &mouseHandler);
+      #endif
       drvManager.AddDriver(&mouse);
 
       PeripheralComponentInterconnectController PCIController;
@@ -163,12 +182,22 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
       drvManager.ActivateAll();
 
    printf("Initializing Hardware, Stage 3\n");
+
+   #ifdef GRAPHICSMODE
+      vga.SetMode(320, 200, 8);
+      Window win1(&desktop, 10,10,20,20, 0xA8,0x00,0x00);
+      desktop.AddChild(&win1);
+      Window win2(&desktop, 40,15,30,30, 0x00,0xA8,0x00);
+      desktop.AddChild(&win2);
+   #endif
+
+
    interrupts.Activate();
 
-   vga.SetMode(320, 200, 8);
-   for(int32_t y = 0; y < 200; y++)
-      for(int32_t x = 0; x < 320; x++)
-         vga.PutPixel(x, y, 0x00, 0x00, 0xA8);
-
-   while(1);
+   while(1)
+   {
+      #ifdef GRAPHICSMODE
+         desktop.Draw(&vga);
+      #endif
+   }
 }

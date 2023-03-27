@@ -78,9 +78,9 @@ using namespace::myos::hardwarecommunication;
 			 */
 			if(buffer[1] != 0 || buffer[2] != 0)
 			{
-                pMouseEventHandler->OnMouseMove(buffer[1], -buffer[2]);
+                pMouseEventHandler->OnMouseMove((int8_t)buffer[1], -((int8_t)buffer[2]));
 
-/*
+
 				for(uint8_t i = 0; i < 3; i++)
 				{
 					if((buffer[0] & (0x1<<i)) != buttons & (0x1<<i))
@@ -92,7 +92,7 @@ using namespace::myos::hardwarecommunication;
 					}
 				}
 				buttons = buffer[0]; // update buttons with new state
-*/
+
 			}
 		}
 		return esp;
