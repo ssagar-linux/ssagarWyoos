@@ -3,6 +3,7 @@
 #define __MYOS_HARDWARECOMMUNICATION__INTERRUPTMANAGER_H
 
 #include <gdt.h>
+#include <multitasking.h>
 #include <common/types.h>
 #include <hardwarecommunication/port.h>
 
@@ -15,7 +16,7 @@ namespace myos
         class InterruptHandler
         {
             protected:
-                myos::common::uint8_t interruptNumber;
+                myos::common::uint8_t InterruptNumber;
                 InterruptManager* pInterruptManager;
                 InterruptHandler(InterruptManager* pInterruptManager, myos::common::uint8_t interruptNumber);
                 ~InterruptHandler();
@@ -28,8 +29,9 @@ namespace myos
         {
             friend class InterruptHandler;
             protected:
-                static InterruptManager	*pActiveInterruptManager;
-                InterruptHandler	*ppHandlers[256];
+                static InterruptManager* pActiveInterruptManager;
+                InterruptHandler* ppHandlers[256];
+                TaskManager *pTaskManager;
 
                 struct GateDescriptor
                 {
@@ -104,7 +106,7 @@ namespace myos
                 Port8BitSlow programmableInterruptControllerSlaveDataPort;
 
             public:
-                InterruptManager(myos::common::uint16_t hardwareInterruptOffset, GlobalDescriptorTable* globalDescriptorTable);
+                InterruptManager(myos::common::uint16_t hardwareInterruptOffset, myos::GlobalDescriptorTable* globalDescriptorTable, myos::TaskManager* pTaskManager);
                 ~InterruptManager();
                 myos::common::uint16_t HardwareInterruptOffset();
                 void Activate();

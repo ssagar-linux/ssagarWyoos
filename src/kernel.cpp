@@ -9,9 +9,10 @@
 #include <drivers/vga.h>
 #include <gui/desktop.h>
 #include <gui/window.h>
+#include <multitasking.h>
 
 
-#define GRAPHICSMODE
+//#define GRAPHICSMODE
 
 using namespace::myos;
 using namespace::myos::common;
@@ -131,6 +132,23 @@ class MouseToConsole: public MouseEventHandler
 
 
 
+
+void taskA()
+{
+   while(true)
+      printf("A");
+}
+
+void taskB()
+{
+   while(true)
+      printf("B");
+}
+
+
+
+
+
 typedef void (*constructor)();
 extern "C" constructor start_ctors;
 extern "C" constructor end_ctors;
@@ -140,14 +158,19 @@ extern "C" void callConstructors()
         (*i)();
 }
 
-
-
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot_magic*/)
 {
    printf("Hello World! --- http://www.ssagarLinux.in\n");
 
    GlobalDescriptorTable gdt;
-   InterruptManager interrupts(0x20, &gdt);
+
+   TaskManager taskManager;
+   Task task1(&gdt, taskA);
+   Task task2(&gdt, taskB);
+   taskManager.AddTask(&task1);
+   taskManager.AddTask(&task2);
+
+   InterruptManager interrupts(0x20, &gdt, &taskManager);
    printf("Initializing Hardware, Stage 1\n");
 
    #ifdef GRAPHICSMODE
