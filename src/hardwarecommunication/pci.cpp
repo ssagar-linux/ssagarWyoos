@@ -185,12 +185,18 @@ Driver* PeripheralComponentInterconnectController::
 GetDriver(PeripheralComponentInterconnectDeviceDescriptor pciDevDesc,
           InterruptManager *pInterrupts)
 {
+   Driver *driver = 0;
     switch(pciDevDesc.vendor_id)
     {
         case 0x1022: // AMD
             switch(pciDevDesc.device_id)
             {
                 case 0x2000: // am79c973
+                    /*
+                    driver = (amd_am79c973*)MemoryManager::pActiveMemoryManager->malloc(sizeof(amd_am79c973));
+                    if(driver != 0)
+                        new (driver) amd_am79c973(...);
+                    */
                     printf("AMD am79c973 ");
                     break;
             }
@@ -213,5 +219,5 @@ GetDriver(PeripheralComponentInterconnectDeviceDescriptor pciDevDesc,
             break;
     }
 
-    return 0;
+    return driver;
 }
