@@ -3,6 +3,7 @@
 #include <gdt.h>
 #include <memorymanagement.h>
 #include <hardwarecommunication/interrupts.h>
+#include <syscalls.h>
 #include <hardwarecommunication/pci.h>
 #include <drivers/driver.h>
 #include <drivers/keyboard.h>
@@ -122,17 +123,20 @@ public:
 
 
 
-
+void sysprintf(char *str)
+{
+   asm("int $0x80" : : "a" (4), "b" (str));
+}
 
 void taskA()
 {
     while(true)
-        printf("A");
+        sysprintf("A");
 }
 void taskB()
 {
     while(true)
-        printf("B");
+        sysprintf("B");
 }
 
 
@@ -177,14 +181,13 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     printf("\n");
 
     TaskManager taskManager;
-    /*
     Task task1(&gdt, taskA);
     Task task2(&gdt, taskB);
     taskManager.AddTask(&task1);
     taskManager.AddTask(&task2);
-    */
 
     InterruptManager interrupts(0x20, &gdt, &taskManager);
+    SyscallHandler syscalls(&interrupts, 0x80);
 
     printf("Initializing Hardware, Stage 1\n");
 
@@ -214,7 +217,9 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
         PeripheralComponentInterconnectController PCIController;
         PCIController.SelectDrivers(&drvManager, &interrupts);
 
+        #ifdef GRAPHICSMODE
         VideoGraphicsArray vga;
+        #endif
 
     printf("Initializing Hardware, Stage 2\n");
         drvManager.ActivateAll();
