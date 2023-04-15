@@ -9,6 +9,7 @@
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 #include <drivers/vga.h>
+#include <drivers/ata.h>
 #include <gui/desktop.h>
 #include <gui/window.h>
 #include <multitasking.h>
@@ -181,11 +182,12 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     printf("\n");
 
     TaskManager taskManager;
+/*
     Task task1(&gdt, taskA);
     Task task2(&gdt, taskB);
     taskManager.AddTask(&task1);
     taskManager.AddTask(&task2);
-
+*/
     InterruptManager interrupts(0x20, &gdt, &taskManager);
     SyscallHandler syscalls(&interrupts, 0x80);
 
@@ -233,6 +235,29 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
         Window win2(&desktop, 40,15,30,30, 0x00,0xA8,0x00);
         desktop.AddChild(&win2);
     #endif
+
+   //interrupt 14
+   printf("\nS-ATA Primary Master: ");
+   AdvancedTechnologyAttachment ata0m(0x1F0, true);
+   ata0m.Identify();
+
+   printf("\nS-ATA Primary Slave: ");
+   AdvancedTechnologyAttachment ata0s(0x1F0, false);
+   ata0s.Identify();
+
+   char *atabuffer = "http://SagarLinux.in";
+   ata0s.Write28(0, (uint8_t*)atabuffer, 21);
+   ata0s.Flush();
+   ata0s.Read28(0, (uint8_t*)atabuffer, 21);
+/*
+   */
+
+   // interrupt 15
+   AdvancedTechnologyAttachment ata1m(0x170, true);
+   AdvancedTechnologyAttachment ata1s(0x170, false);
+
+   // third: 0x1E8
+   // fourth: 0x168
 
 
     interrupts.Activate();
