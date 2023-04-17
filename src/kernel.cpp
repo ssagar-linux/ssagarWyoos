@@ -10,6 +10,7 @@
 #include <drivers/mouse.h>
 #include <drivers/vga.h>
 #include <drivers/ata.h>
+#include <filesystem/msdospart.h>
 #include <gui/desktop.h>
 #include <gui/window.h>
 #include <multitasking.h>
@@ -21,6 +22,7 @@
 using namespace myos;
 using namespace myos::common;
 using namespace myos::drivers;
+using namespace myos::filesystem;
 using namespace myos::hardwarecommunication;
 using namespace myos::gui;
 
@@ -216,8 +218,8 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
         #endif
         drvManager.AddDriver(&mouse);
 
-        PeripheralComponentInterconnectController PCIController;
-        PCIController.SelectDrivers(&drvManager, &interrupts);
+//        PeripheralComponentInterconnectController PCIController;
+//        PCIController.SelectDrivers(&drvManager, &interrupts);
 
         #ifdef GRAPHICSMODE
         VideoGraphicsArray vga;
@@ -245,12 +247,14 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
    AdvancedTechnologyAttachment ata0s(0x1F0, false);
    ata0s.Identify();
 
+/*
    char *atabuffer = "http://SagarLinux.in";
    ata0s.Write28(0, (uint8_t*)atabuffer, 21);
    ata0s.Flush();
    ata0s.Read28(0, (uint8_t*)atabuffer, 21);
-/*
    */
+
+   MSDOSPartitionTable::ReadPartitions(&ata0s);
 
    // interrupt 15
    AdvancedTechnologyAttachment ata1m(0x170, true);

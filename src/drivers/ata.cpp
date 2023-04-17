@@ -144,7 +144,7 @@ void AdvancedTechnologyAttachment::Write28(uint32_t sector, uint8_t *pData, int 
          ii)  update sector number
          iii) write 28 bit LBA address
          iv) send write command to port 0x1F7
-    * write user data to sector in little endian 
+    * write user data to sector in little endian
       and then fill remaining sector with zero
     */
 
