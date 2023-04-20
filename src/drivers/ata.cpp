@@ -120,12 +120,13 @@ void AdvancedTechnologyAttachment::Read28(uint32_t sector, uint8_t *pData, int c
    {
       uint16_t wdata = dataPort.Read();
 
+/*
       char *text = "  \0";
       if(i+1 < count)
          text[1] = (wdata >> 8) & 0x00FF;
       text[0] = wdata & 0x00FF;
       printf(text);
-
+*/
 
       pData[i] = wdata & 0x00FF;
          pData[i+1] = (wdata >> 8) & 0x00FF;
